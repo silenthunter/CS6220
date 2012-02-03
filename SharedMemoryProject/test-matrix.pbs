@@ -1,0 +1,28 @@
+#PBS -q class
+#PBS -l nodes=1
+#PBS -l walltime=00:10:00
+#PBS -N SharedMemoryProject
+
+export OMPI_MCA_mpi_yield_when_idle=0
+cd $PBS_O_WORKDIR
+
+
+date
+hostname
+echo $PWD
+cat $PBS_NODEFILE
+echo -e "\n\n"
+
+# Run the benchmarks
+
+export OMP_NUM_THREADS=8
+./single 100
+./double 100
+./triple 100
+./single 1000
+./double 1000
+./triple 1000
+./single 10000
+./double 10000
+./triple 10000
+# eof

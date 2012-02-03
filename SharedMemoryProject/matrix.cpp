@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <ctime>
 #include <iostream>
+#include <stdlib.h>
 
 using std::cout;
 using std::endl;
@@ -34,7 +35,8 @@ void ComputeMatrix(double* A, double* B, double* C, int dim)
 
 int main(int argc, char* argv[])
 {
-	int dim = 100;
+	if(argc < 2) exit(-1);
+	int dim = atoi(argv[1]);
 	double* A = new double[dim * dim];
 	double* B = new double[dim * dim];
 	double* C = new double[dim * dim];

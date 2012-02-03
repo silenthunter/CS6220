@@ -9,4 +9,4 @@ test: all
 	./triple
 
 clean:
-	rm single double triple
+	rm single double triple *.e* *.o*
