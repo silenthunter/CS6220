@@ -1,7 +1,7 @@
 all: matrix.cpp
-	g++ -fopenmp matrix.cpp -o single -DSINGLE
-	g++ -fopenmp matrix.cpp -o double -DDOUBLE
-	g++ -fopenmp matrix.cpp -o triple -DTRIPLE
+	icc -openmp matrix.cpp -o single -DSINGLE
+	icc -openmp matrix.cpp -o double -DDOUBLE
+	icc -openmp matrix.cpp -o triple -DTRIPLE
 
 test: all
 	./single
