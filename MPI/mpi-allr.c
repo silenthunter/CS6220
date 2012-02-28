@@ -10,7 +10,6 @@
 #define max(a, b) (a > b  ? a : b)
 #define min(a, b) (a < b  ? a : b)
 
-
 /* 
  * MPI Specification: int MPI_Allreduce(void *sbuf, void *rbuf, int
  * count, MPI_Datatype dtype, MPI_Op op, MPI_Comm comm)
@@ -56,8 +55,13 @@ gthpc_Allreduce (void *sbuf, void *rbuf, int count, MPI_Op op, MPI_Comm comm)
 		//printf("%d --> %d\n", rank, partner);
 
 		//send/receive partner;
-		MPI_Send(rbuf, count, MPI_DOUBLE, partner, 0, comm);
-		MPI_Recv(&tempBuff, count, MPI_DOUBLE, partner, 0, comm, &status);
+		if(rank & (int)pow(2, i)){
+			MPI_Send(rbuf, count, MPI_DOUBLE, partner, 0, comm);
+			MPI_Recv(&tempBuff, count, MPI_DOUBLE, partner, 0, comm, &status);
+		} else {
+			MPI_Recv(&tempBuff, count, MPI_DOUBLE, partner, 0, comm, &status);
+			MPI_Send(rbuf, count, MPI_DOUBLE, partner, 0, comm);
+		}
 		sendCounter++;
 
 		for(j = 0; j < count; j++)
@@ -69,9 +73,10 @@ gthpc_Allreduce (void *sbuf, void *rbuf, int count, MPI_Op op, MPI_Comm comm)
 		else
 			((double*)rbuf)[j] = min(((double*)rbuf)[j], tempBuff[j]);
 		}
-		MPI_Barrier(comm);
 	}
+	#ifdef VERBOSE
 	if(rank == 0) printf("%d sends per node with %d nodes\n", sendCounter, threads);
+	#endif
 
   return 0;
 }

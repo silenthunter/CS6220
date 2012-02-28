@@ -10,16 +10,16 @@
 int gthpc_Allreduce (void *sbuf, void *rbuf, int count, MPI_Op op,
 		      MPI_Comm comm);
 
+
 int
 main (int ac, char *av[])
 {
   int i;
   int rank = -1;
-  int count = 1;
+  int count = 100;
   const int maxsize = 256 * 256;
-  const int vsize = 100;
+  const int vsize = pow(2, atoi(av[1]));
   double start, stop;
-  int netComm = 0;
 
   MPI_Init (&ac, &av);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -36,23 +36,23 @@ main (int ac, char *av[])
   for (i = 0; i < count; i++)
     {
       gthpc_Allreduce (sbuf, rbuf, vsize, MPI_SUM, MPI_COMM_WORLD);
-      netComm += (int)sbuf[0];
     }
+#if 0
 for(i = 0; i < vsize; i++)
 if(rbuf[i] != (i + 1) * threads)
 {
 printf("%.2f != %.2d\n", rbuf[i], (i+1)*threads);
 break;
 }
+#endif
   stop = MPI_Wtime ();
 
   if (rank == 0)
     {
       printf ("Runtime = %g\n"
 	      "Calls = %d\n"
-	      "Time per call = %g us\n"
-	      "Sends = %d\n",
-	      stop - start, count, 1e6 * (stop - start) / count, netComm);
+	      "Time per call = %g us\n",
+	      stop - start, count, 1e6 * (stop - start) / count);
     }
 
   MPI_Finalize ();
