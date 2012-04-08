@@ -10,6 +10,7 @@
 int gthpc_Allreduce (void *sbuf, void *rbuf, int count, MPI_Op op,
 		      MPI_Comm comm);
 
+
 int
 main (int ac, char *av[])
 {
@@ -17,13 +18,15 @@ main (int ac, char *av[])
   int rank = -1;
   int count = 100;
   const int maxsize = 256 * 256;
-  const int vsize = 1;
+  const int vsize = pow(2, atoi(av[1]));
   double start, stop;
-  double sbuf[maxsize];
-  double rbuf[maxsize];
 
   MPI_Init (&ac, &av);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+  int threads;
+  MPI_Comm_size (MPI_COMM_WORLD, &threads);
+  double sbuf[maxsize];
+  double rbuf[maxsize];
   for (i = 0; i < maxsize; i++)
     {
       sbuf[i] = (i + 1) * 1.0;
@@ -34,6 +37,14 @@ main (int ac, char *av[])
     {
       gthpc_Allreduce (sbuf, rbuf, vsize, MPI_SUM, MPI_COMM_WORLD);
     }
+#if 0
+for(i = 0; i < vsize; i++)
+if(rbuf[i] != (i + 1) * threads)
+{
+printf("%.2f != %.2d\n", rbuf[i], (i+1)*threads);
+break;
+}
+#endif
   stop = MPI_Wtime ();
 
   if (rank == 0)
