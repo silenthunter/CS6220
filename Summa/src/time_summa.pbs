@@ -14,6 +14,7 @@ cat $PBS_NODEFILE
 echo -e "\n\n"
 
 # Run the ping-pong benchmark
-mpirun --hostfile $PBS_NODEFILE -np 64 ./time_summa
+export OMP_NUM_THEADS=16
+mpirun --hostfile $PBS_NODEFILE -np 4 ./time_summa
 
 # eof

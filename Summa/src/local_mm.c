@@ -43,8 +43,8 @@ local_mm (const int m, const int n, const int k, const double alpha,
   assert (lda >= m);
   assert (ldb >= k);
   assert (ldc >= m);
-
   /* Iterate over the columns of C */
+  #pragma omp parallel for private(row)
   for (col = 0; col < n; col++)
     {
 

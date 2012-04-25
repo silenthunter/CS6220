@@ -86,12 +86,12 @@ main (int argc, char *argv[])
   printf ("Using Host:%s -- Rank %d out of %d\n", hostname, rank, np);
 
   /* These tests use 16 processes */
-  if (np != 64)
+  if (np != 4)
     {
-      printf ("Error: np=%d. Please use 64 processes\n", np);
+      printf ("Error: np=%d. Please use 4 processes\n", np);
     }
 
-  random_summa (256, 256, 256, 8, 8, 1, NUM_TRIALS);
+  random_summa (256, 256, 256, 2, 2, 128, NUM_TRIALS);
 
 
   MPI_Finalize ();

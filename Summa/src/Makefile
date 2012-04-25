@@ -21,7 +21,7 @@ LANG = C
 
 
 CC = mpicc
-CFLAGS = -O -Wall -Wextra -lm
+CFLAGS = -O -Wall -Wextra -lm -fopenmp
 
 FC = mpif90
 FFLAGS = -O
@@ -96,8 +96,8 @@ clean : clean-pbs
 
 clean-pbs : 
 	@ [ -d archive ] || mkdir -p ./archive/
-	if [ -f Proj1.e* ]; then mv -f Proj1.e* ./archive/; fi;
-	if [ -f Proj1.o* ]; then mv -f Proj1.o* ./archive/; fi;
+	if [ -f unittest_summa.e* ]; then mv -f unittest_summa.e* ./archive/; fi;
+	if [ -f unittest_summa.o* ]; then mv -f unittest_summa.o* ./archive/; fi;
 
 run--unittest_mm : unittest_mm clean-pbs
 	qsub unittest_mm.pbs
