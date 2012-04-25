@@ -21,7 +21,10 @@ LANG = C
 
 
 CC = mpicc
-CFLAGS = -O -Wall -Wextra -lm
+CFLAGS = -O -Wall -Wextra -lm -L/opt/cuda-4.0/cuda/lib64/ -lcudart
+
+CUDACC = nvcc
+CUDAFLAGS = -O -D_nvcc
 
 FC = mpif90
 FFLAGS = -O
@@ -36,9 +39,9 @@ MM = local_mm.o local_mm_wrapper.o
 SUMMA = summa.o summa_wrapper.o
 endif
 
-local_mm.o : local_mm.c local_mm.f90 local_mm.h
+local_mm.o : local_mm.cu local_mm.f90 local_mm.h
 ifeq ($(LANG),C)
-	$(CC) $(CFLAGS) -o $@ -c local_mm.c
+	$(CUDACC) $(CUDAFLAGS) -o $@ -c local_mm.cu
 else
 	$(FC) $(FFLAGS) -o $@ -c local_mm.f90
 endif
