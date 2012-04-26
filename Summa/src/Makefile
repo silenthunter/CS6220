@@ -24,7 +24,7 @@ CC = mpicc
 CFLAGS = -O -Wall -Wextra -lm -L/opt/cuda-4.0/cuda/lib64/ -lcudart
 
 CUDACC = nvcc
-CUDAFLAGS = -O -D_nvcc
+CUDAFLAGS = -O -D_nvcc -arch=sm_20
 
 FC = mpif90
 FFLAGS = -O
