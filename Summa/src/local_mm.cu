@@ -9,7 +9,7 @@
 #include <cuda.h>
 #include <thrust/transform_reduce.h>
 
-extern __shared__ double dotProducts[];
+extern __shared__ double sharedLines[];
 
 /**
  *
@@ -40,6 +40,13 @@ __global__ void local_mm_device (const int m, const int n, const int k, const do
 	  const double *A, const int lda, const double *B, const int ldb,
 	  const double beta, double *C, const int ldc)
 {
+	double *sharedA = &sharedLines[0];
+	double *sharedB = &sharedLines[k * n];
+	int idx = (blockIdx.y * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x;
+	sharedA[idx] = A[idx];
+	sharedB[idx] = B[idx];
+	
+	__syncthreads();//shared memory is done transfering
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	int k_iter;
@@ -48,10 +55,9 @@ __global__ void local_mm_device (const int m, const int n, const int k, const do
 	{
 		int a_index = (k_iter * lda) + row;	/* Compute index of A element */
 		int b_index = (col * ldb) + k_iter;	/* Compute index of B element */
-		dotprod += A[a_index] * B[b_index];	/* Compute product of A and B */
+		dotprod += sharedA[a_index] * sharedB[b_index];	/* Compute product of A and B */
 	}
 	int c_index = (col * ldc) + row;
-	//dotProducts[c_index + threadIdx.y + blockDim.x + threadIdx.x] = dotprod;
 	C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
 
 	//__syncthreads();//Wait until each thread has their results in
@@ -71,7 +77,6 @@ void initDeviceProperties()
 	deviceCount = count;
 	globalMemory = prop.totalGlobalMem;
 	sharedMemory = prop.sharedMemPerBlock;
-
 }
 
 extern "C" void local_mm (const int m, const int n, const int k, const double alpha,
@@ -81,27 +86,40 @@ extern "C" void local_mm (const int m, const int n, const int k, const double al
 
 if(deviceCount == 0) initDeviceProperties();
 
-double *d_A, *d_B, *d_C;
-cudaMalloc((void**)&d_A, sizeof(double) * m * k);
-cudaMalloc((void**)&d_B, sizeof(double) * n * k);
-cudaMalloc((void**)&d_C, sizeof(double) * m * n);
+double *d_C[deviceCount];
 
-//Copy local array to device
-cudaMemcpy(d_A, A, sizeof(double) * m * k, cudaMemcpyHostToDevice);
-cudaMemcpy(d_B, B, sizeof(double) * m * k, cudaMemcpyHostToDevice);
-cudaMemcpy(d_C, C, sizeof(double) * m * k, cudaMemcpyHostToDevice);
+for(int i = 0; i < deviceCount; i++)
+{
+	cudaSetDevice(i);
+	int offset = k / deviceCount * i;
+	double *d_A, *d_B;
+	cudaMalloc((void**)&d_A, sizeof(double) * m * k / deviceCount);
+	cudaMalloc((void**)&d_B, sizeof(double) * n * k / deviceCount);
+	cudaMalloc((void**)&d_C[i], sizeof(double) * m * n / deviceCount);
 
-//Find the number of rows that can fit in shared memory
-int rowMax = sharedMemory / (sizeof(double) * max(n,m));
-int rowMemRequired = rowMax * max(n,m) * sizeof(double);
+	//Copy local array to device
+	cudaMemcpy(d_A, &A[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B, &B[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_C[i], &C[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
 
-int blocks = k / rowMax;
+	//Find the number of rows that can fit in shared memory
+	int rowMax = sharedMemory / (sizeof(double) * max(n,m));
+	int rowMemRequired = rowMax * max(n,m) * sizeof(double);
 
-dim3 blocksInGrid(blocks, 1);
-dim3 threadsInBlock(rowMax, max(n,m));
-local_mm_device<<<blocksInGrid,threadsInBlock,rowMemRequired>>>(m, n, k, alpha, d_A, lda, d_B, ldb, beta, d_C, ldc);
+	int blocks = k / rowMax;
 
-cudaMemcpy(C, d_C, sizeof(double) * m * k, cudaMemcpyDeviceToHost);
+	dim3 blocksInGrid(1, blocks, 1);
+	dim3 threadsInBlock(rowMax, max(n,m));
+	local_mm_device<<<blocksInGrid,threadsInBlock,rowMemRequired>>>(m, n, k, alpha, d_A, lda, d_B, ldb, beta, d_C[i], ldc);
+
+}
+//Gather data from async launches
+for(int i = 0; i < deviceCount; i++)
+{
+	int offset = k / deviceCount * i;
+	cudaSetDevice(i);
+	cudaMemcpy(&C[offset], d_C[i], sizeof(double) * m * k / deviceCount, cudaMemcpyDeviceToHost);
+}
 
 
 }

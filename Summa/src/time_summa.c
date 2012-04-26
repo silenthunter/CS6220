@@ -91,7 +91,10 @@ main (int argc, char *argv[])
       printf ("Error: np=%d. Please use 4 processes\n", np);
     }
 
-  random_summa (256, 256, 256, 2, 2, 64, NUM_TRIALS);
+  random_summa (256, 256, 256, 2, 2, 256, NUM_TRIALS);
+  random_summa (512, 512, 512, 2, 2, 256, NUM_TRIALS);
+  random_summa (1024, 1024, 1024, 2, 2, 256, NUM_TRIALS);
+  random_summa (2048, 2048, 2048, 2, 2, 256, NUM_TRIALS);
 
 
   MPI_Finalize ();
