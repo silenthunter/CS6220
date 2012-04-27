@@ -92,6 +92,11 @@ main (int argc, char *argv[])
     }
 
   random_summa (256, 256, 256, 2, 2, 128, NUM_TRIALS);
+  random_summa (512, 512, 512, 2, 2, 256, NUM_TRIALS);
+  random_summa (1024, 1024, 1024, 2, 2, 512, NUM_TRIALS);
+  random_summa (2048, 2048, 2048, 2, 2, 512, NUM_TRIALS);
+  random_summa (4096, 4096, 4096, 2, 2, 512, NUM_TRIALS);
+  random_summa (8196, 8196, 8196, 2, 2, 512, NUM_TRIALS);
 
 
   MPI_Finalize ();

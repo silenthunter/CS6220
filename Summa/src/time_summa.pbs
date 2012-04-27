@@ -1,6 +1,6 @@
 #PBS -q class
-#PBS -l nodes=8
-#PBS -l walltime=00:05:00
+#PBS -l nodes=4:sixcore
+#PBS -l walltime=00:15:00
 #PBS -N time_summa
 
 export OMPI_MCA_mpi_yield_when_idle=0
@@ -15,6 +15,6 @@ echo -e "\n\n"
 
 # Run the ping-pong benchmark
 export OMP_NUM_THEADS=16
-mpirun --hostfile $PBS_NODEFILE -np 4 ./time_summa
+mpirun --hostfile $PBS_NODEFILE -np 4 -x OMP_NUM_THEADS ./time_summa
 
 # eof

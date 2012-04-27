@@ -115,25 +115,25 @@ main (int argc, char *argv[])
   printf ("[Using Host:%s -- Rank %d out of %d]\n", hostname, rank, np);
 
   /* These tests use 16 processes */
-  if (np != 16)
+  if (np != 4)
     {
-      printf ("Error: np=%d. Please use 16 processes\n", np);
+      printf ("Error: np=%d. Please use 4 processes\n", np);
     }
 
   /** Test different sizes */
-  random_matrix_test (16, 16, 16, 4, 4, 1);
-  random_matrix_test (32, 32, 32, 4, 4, 1);
-  random_matrix_test (128, 128, 128, 4, 4, 1);
+  random_matrix_test (16, 16, 16, 2, 2, 1);
+  random_matrix_test (32, 32, 32, 2, 2, 1);
+  random_matrix_test (128, 128, 128, 2, 2, 1);
 
   /* Test different shapes */
-  random_matrix_test (128, 32, 128, 4, 4, 1);
-  random_matrix_test (64, 32, 128, 4, 4, 1);
+  random_matrix_test (128, 32, 128, 2, 2, 1);
+  random_matrix_test (64, 32, 128, 2, 2, 1);
 
   /* Test different process grids */
-  random_matrix_test (128, 128, 128, 8, 2, 1);
+  /*random_matrix_test (128, 128, 128, 8, 2, 1);
   random_matrix_test (128, 128, 128, 2, 8, 1);
   random_matrix_test (128, 128, 128, 1, 16, 1);
-  random_matrix_test (128, 128, 128, 16, 1, 1);
+  random_matrix_test (128, 128, 128, 16, 1, 1);*/
 
   MPI_Finalize ();
   return 0;
