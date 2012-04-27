@@ -139,7 +139,7 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 			//Col is self
 			if(i == colRank)
 			{
-				for(j = 0; j < pb * blockSizeK; j++)
+				for(j = 0; j < pb * blockSizeN; j++)
 				{
 					bufTemp[j] = Bblock[pbPos + j / blockSizeK + (j % blockSizeK) * blockSizeK];
 				}
@@ -148,32 +148,31 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 			if(i < procGridX) MPI_Bcast(&bufA[datRecv], pb * blockSizeM, MPI_DOUBLE, i, rowComm);
 			if(i < procGridY)
 			{
-				MPI_Bcast(bufTemp, pb * blockSizeK, MPI_DOUBLE, i, colComm);
-				for(j = 0; j < pb * blockSizeK; j++)
+				MPI_Bcast(bufTemp, pb * blockSizeN, MPI_DOUBLE, i, colComm);
+				for(j = 0; j < pb * blockSizeN; j++)
 				{
 					bufB[pbPos + j / blockSizeK + (j % blockSizeK) * blockSizeK] = bufTemp[j];
 				}
 			}
 			
-			/*printf("------------\n");
+			/*if(rank == 0){
+			printf("------------\n");
 			printf("------------\n");
 			print_matrixx(bufA, blockSizeK, blockSizeM);
 			printf("------------\n");
 			print_matrixx(bufB, blockSizeN, blockSizeK);
 			printf("------------\n");
-			printf("------------\n");//*/
+			printf("------------\n");}//*/
 			
-			datRecv += pb * blockSizeM;
-			datRecvMax += pb * max(blockSizeM, blockSizeK);
-			pbPos += pb < blockSizeK ? pb: blockSizeK;//+= pb * blockSizeN;
+			datRecv += pb * blockSizeM;//This only applies to rows
+			datRecvMax += pb * max(blockSizeM, blockSizeN);
+			pbPos += pb < blockSizeK ? pb: blockSizeK;
 			local_mm(blockSizeM, blockSizeN, blockSizeK, 1, bufA, blockSizeM, bufB, blockSizeK, 1, Cblock, blockSizeM);
 		}
 		datRecv = 0;//= datRecvB = 0;
 		datRecvMax = 0;
 		if(pbPos >= pb)
 			pbPos = 0;
-		
-		//local_mm(blockSizeM, blockSizeN, blockSizeK, 1, bufA, blockSizeM, bufB, blockSizeK, 1, Cblock, blockSizeM);
 	}
 
 	free(bufA);
