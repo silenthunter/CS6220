@@ -67,7 +67,7 @@ static int deviceCount = 0;
 static long globalMemory;
 static long sharedMemory;
 
-void initDeviceProperties()
+extern "C" void initDeviceProperties()
 {
 	int count;
 	cudaDeviceProp prop;
@@ -83,23 +83,24 @@ extern "C" void local_mm (const int m, const int n, const int k, const double al
 	  const double *A, const int lda, const double *B, const int ldb,
 	  const double beta, double *C, const int ldc)
 {
-
+return;
 if(deviceCount == 0) initDeviceProperties();
 
+double *d_A[deviceCount];
+double *d_B[deviceCount];
 double *d_C[deviceCount];
 
 for(int i = 0; i < deviceCount; i++)
 {
 	cudaSetDevice(i);
 	int offset = k / deviceCount * i;
-	double *d_A, *d_B;
-	cudaMalloc((void**)&d_A, sizeof(double) * m * k / deviceCount);
-	cudaMalloc((void**)&d_B, sizeof(double) * n * k / deviceCount);
+	cudaMalloc((void**)&d_A[i], sizeof(double) * m * k / deviceCount);
+	cudaMalloc((void**)&d_B[i], sizeof(double) * n * k / deviceCount);
 	cudaMalloc((void**)&d_C[i], sizeof(double) * m * n / deviceCount);
 
 	//Copy local array to device
-	cudaMemcpy(d_A, &A[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_B, &B[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_A[i], &A[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
+	cudaMemcpy(d_B[i], &B[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_C[i], &C[offset], sizeof(double) * m * k / deviceCount, cudaMemcpyHostToDevice);
 
 	//Find the number of rows that can fit in shared memory
@@ -110,7 +111,7 @@ for(int i = 0; i < deviceCount; i++)
 
 	dim3 blocksInGrid(1, blocks, 1);
 	dim3 threadsInBlock(rowMax, max(n,m));
-	local_mm_device<<<blocksInGrid,threadsInBlock,rowMemRequired>>>(m, n, k, alpha, d_A, lda, d_B, ldb, beta, d_C[i], ldc);
+	local_mm_device<<<blocksInGrid,threadsInBlock,rowMemRequired>>>(m, n, k, alpha, d_A[i], lda, d_B[i], ldb, beta, d_C[i], ldc);
 
 }
 //Gather data from async launches
@@ -119,6 +120,9 @@ for(int i = 0; i < deviceCount; i++)
 	int offset = k / deviceCount * i;
 	cudaSetDevice(i);
 	cudaMemcpy(&C[offset], d_C[i], sizeof(double) * m * k / deviceCount, cudaMemcpyDeviceToHost);
+	cudaFree(d_A[i]);
+	cudaFree(d_B[i]);
+	cudaFree(d_C[i]);
 }
 
 
