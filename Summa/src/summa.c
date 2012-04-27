@@ -175,6 +175,9 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 		
 		//local_mm(blockSizeM, blockSizeN, blockSizeK, 1, bufA, blockSizeM, bufB, blockSizeK, 1, Cblock, blockSizeM);
 	}
+
+	free(bufA);
+	free(bufB);
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 
