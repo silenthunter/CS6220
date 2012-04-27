@@ -14,7 +14,7 @@
 
 int max(int a, int b)
 {
-	return a > b ? a : b;
+	return a < b ? a : b;
 }
 
 void print_matrixx(double* a, int b, int c)
@@ -65,10 +65,10 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 	MPI_Comm rowComm, colComm;
 	MPI_Group origGrp, rowGrp, colGrp;
 
-	if(rank >= procGridX * procGridY) return;//Why would this happen?
+	if(rank >= procGridX * procGridY) return;//Too many processes assigned
 			
-	int proc_x = rank / procGridY;
-	int proc_y = rank % procGridY;
+	int proc_x = rank % procGridX;
+	int proc_y = rank / procGridX;
 	
 	int blockSizeK = k / procGridY;
 	int blockSizeM = m / procGridX;
@@ -85,47 +85,38 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 		printf("\n");
 	}
 	
-	int rowRanks[procGridX];
-	int colRanks[procGridY];
+	int rowRanks[procGridY];
+	int colRanks[procGridX];
 	
 	//Set up communication
 	MPI_Comm_group(MPI_COMM_WORLD, &origGrp);
-	for(i = 0; i < procGridX; i++)
-	{
-		rowRanks[i] = proc_y + procGridY * i;
-		if(rowRanks[i] >= procGridX * procGridY) printf("(%d)row error: %d\n", rank, rowRanks[i]);
-	}
 	for(i = 0; i < procGridY; i++)
-	{
-		colRanks[i] = proc_x * procGridY + i;
-		if(colRanks[i] >= procGridX * procGridY) printf("(%d)col error: %d = %d * %d + %d\n", rank, colRanks[i], proc_x, procGridY, i);
-	}
+		rowRanks[i] = proc_x + procGridX * i;
+	for(i = 0; i < procGridX; i++)
+		colRanks[i] = proc_y * procGridX + i;
 		
-	MPI_Group_incl(origGrp, procGridX, rowRanks, &rowGrp);
-	MPI_Group_incl(origGrp, procGridY, colRanks, &colGrp);
+	MPI_Group_incl(origGrp, procGridY, rowRanks, &rowGrp);
+	MPI_Group_incl(origGrp, procGridX, colRanks, &colGrp);
 	
-	if(MPI_Comm_create(MPI_COMM_WORLD, rowGrp, &rowComm) != MPI_SUCCESS) printf("Comm creation error\n");
-	if(MPI_Comm_create(MPI_COMM_WORLD, colGrp, &colComm) != MPI_SUCCESS) printf("Comm creation error\n");
+	MPI_Comm_create(MPI_COMM_WORLD, rowGrp, &rowComm);
+	MPI_Comm_create(MPI_COMM_WORLD, colGrp, &colComm);
 	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 	int rowRank, colRank;
-	if(MPI_Group_rank(rowGrp, &rowRank) != MPI_SUCCESS) printf("ERROR %d\n", rank);
-	if(MPI_Group_rank(colGrp, &colRank) != MPI_SUCCESS) printf("ERROR %d\n", rank);
-	
+	MPI_Group_rank(rowGrp, &rowRank);
+	MPI_Group_rank(colGrp, &colRank);
 	
 	int memNum = pb > blockSizeK ? pb : blockSizeK;
 	double *bufA = (double*)malloc(sizeof(double) * memNum * blockSizeM);
 	double *bufB = (double*)malloc(sizeof(double) * memNum * blockSizeN);
 	int pbPos = 0;
 	int datRecv = 0;
-	int datRecvMax = 0;
-	double bufTemp[pb * blockSizeN];
 	
 	//Loop through blocks
 	for(i = 0; i < max(procGridX, procGridY); i++)
 	{
-		while(datRecvMax < blockSizeM * blockSizeN)
+		while(datRecv < blockSizeM * blockSizeK)
 		{
 				
 			//Zero the buffers
@@ -136,6 +127,7 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 			if(i == rowRank)
 				memcpy(&bufA[pbPos * blockSizeM], &Ablock[datRecv], sizeof(double) * pb * blockSizeM);
 			
+			double bufTemp[pb * blockSizeN];
 			//Col is self
 			if(i == colRank)
 			{
@@ -145,36 +137,31 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 				}
 			}
 			
-			if(i < procGridX) MPI_Bcast(&bufA[datRecv], pb * blockSizeM, MPI_DOUBLE, i, rowComm);
-			if(i < procGridY)
+			MPI_Bcast(&bufA[datRecv], pb * blockSizeM, MPI_DOUBLE, i, rowComm);
+			MPI_Bcast(bufTemp, pb * blockSizeN, MPI_DOUBLE, i, colComm);
+			for(j = 0; j < pb * blockSizeN; j++)
 			{
-				MPI_Bcast(bufTemp, pb * blockSizeN, MPI_DOUBLE, i, colComm);
-				for(j = 0; j < pb * blockSizeN; j++)
-				{
-					bufB[pbPos + j / blockSizeK + (j % blockSizeK) * blockSizeK] = bufTemp[j];
-				}
+				bufB[pbPos + j / blockSizeK + (j % blockSizeK) * blockSizeK] = bufTemp[j];
 			}
 			
-			/*if(rank == 0){
-			printf("------------\n");
+			/*printf("------------\n");
 			printf("------------\n");
 			print_matrixx(bufA, blockSizeK, blockSizeM);
 			printf("------------\n");
 			print_matrixx(bufB, blockSizeN, blockSizeK);
 			printf("------------\n");
-			printf("------------\n");}//*/
+			printf("------------\n");//*/
 			
-			datRecv += pb * blockSizeM;//This only applies to rows
-			datRecvMax += pb * max(blockSizeM, blockSizeN);
-			pbPos += pb < blockSizeK ? pb: blockSizeK;
+			datRecv += pb * blockSizeM;
+			pbPos += pb < blockSizeK ? pb: blockSizeK;//+= pb * blockSizeN;
 			local_mm(blockSizeM, blockSizeN, blockSizeK, 1, bufA, blockSizeM, bufB, blockSizeK, 1, Cblock, blockSizeM);
 		}
-		datRecv = 0;//= datRecvB = 0;
-		datRecvMax = 0;
+		datRecv = 0;
 		if(pbPos >= pb)
 			pbPos = 0;
+		
+		//local_mm(blockSizeM, blockSizeN, blockSizeK, 1, bufA, blockSizeM, bufB, blockSizeK, 1, Cblock, blockSizeM);
 	}
-
 	free(bufA);
 	free(bufB);
 	
