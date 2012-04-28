@@ -1,0 +1,21 @@
+#PBS -q class
+#PBS -l nodes=4:m2090
+#PBS -l walltime=00:05:00
+#PBS -N time_gpu
+
+export OMPI_MCA_mpi_yield_when_idle=0
+cd $PBS_O_WORKDIR
+
+
+date
+hostname
+echo $PWD
+cat $PBS_NODEFILE
+echo -e "\n\n"
+
+echo -e "scale:2\n"
+
+# Run the ping-pong benchmark
+mpirun --hostfile $PBS_NODEFILE -np 4 -x LD_LIBRARY_PATH ./time_summa 2
+
+# eof
