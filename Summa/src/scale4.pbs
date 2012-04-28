@@ -13,10 +13,10 @@ echo $PWD
 cat $PBS_NODEFILE
 echo -e "\n\n"
 
-echo -e "scale:1\n"
+echo -e "scale:4\n"
 
 # Run the ping-pong benchmark
 export OMP_NUM_THEADS=16
-mpirun --hostfile $PBS_NODEFILE -np 4 -x OMP_NUM_THEADS ./time_summa 1
+mpirun --hostfile $PBS_NODEFILE -np 4 -x OMP_NUM_THEADS ./time_summa 4
 
 # eof
