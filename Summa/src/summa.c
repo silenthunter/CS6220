@@ -20,7 +20,7 @@ void printMatrix_(double *mat, int x, int y)
 	for(i = 0; i < y; i++)
 	{
 		for(j = 0; j < x; j++)
-			printf("%1.0f ", mat[x * j + i]);
+			printf("%1.0f ", mat[i + j * y]);
 		printf("\n");
 	}
 
@@ -109,20 +109,20 @@ void summa(int m, int n, int k, double *Ablock, double *Bblock, double *Cblock,
 
 			memcpy(&bufA[j * dimM], &Ablock[j * dimM], sizeof(double) * dimM * pb);
 			for(x = 0; x < dimN * pb; x++)
-				tmpB[x] = Bblock[(x % dimN) * dimN + j + x / dimN];
+				tmpB[x] = Bblock[j + x / dimN + (x % dimN) * dimK];
 
 			MPI_Bcast(&bufA[j * dimM], pb * dimM, MPI_DOUBLE, i, rowComm);
 			MPI_Bcast(tmpB, pb * dimN, MPI_DOUBLE, i, colComm);
 
 			for(x = 0; x < dimN * pb; x++)
-				bufB[(x % dimN) * dimN + j + x / dimN] = tmpB[x];
+				bufB[j + x / dimN + (x % dimN) * dimK] = tmpB[x];
 			
 			local_mm(dimM, dimN, dimK, 1, bufA, dimM, bufB, dimK, 1, Cblock, dimM);
 
 			/*if(rank == 0)printf("---------------\n");
-			//if(rank == 0)printMatrix_(bufA, pb, dimM);
-			//if(rank == 0)printMatrix_(bufB, dimN, pb);
-			if(rank == 0)printMatrix_(Cblock, dimN, dimM);
+			if(rank == 0)printMatrix_(bufA, dimK, dimM);
+			if(rank == 0)printMatrix_(bufB, dimN, dimK);
+			//if(rank == 0)printMatrix_(Cblock, dimN, dimM);
 			if(rank == 0)printf("---------------\n");*/
 		}
 	}
