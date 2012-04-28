@@ -43,6 +43,7 @@ local_mm (const int m, const int n, const int k, const double alpha,
   assert (lda >= m);
   assert (ldb >= k);
   assert (ldc >= m);
+
   /* Iterate over the columns of C */
   #pragma omp parallel for private(row)
   for (col = 0; col < n; col++)
@@ -54,18 +55,37 @@ local_mm (const int m, const int n, const int k, const double alpha,
 
 	  int k_iter;
 	  double dotprod = 0.0;	/* Accumulates the sum of the dot-product */
+	  double dotprod2 = 0.0;	/* Accumulates the sum of the dot-product */
+	  double dotprod3 = 0.0;	/* Accumulates the sum of the dot-product */
+	  double dotprod4 = 0.0;	/* Accumulates the sum of the dot-product */
 
 	  /* Iterate over column of A, row of B */
-	  for (k_iter = 0; k_iter < k; k_iter++)
+	  for (k_iter = 0; k_iter < k; k_iter += 4)
 	    {
 	      int a_index, b_index;
+	      int a_index2, b_index2;
+	      int a_index3, b_index3;
+	      int a_index4, b_index4;
 	      a_index = (k_iter * lda) + row;	/* Compute index of A element */
 	      b_index = (col * ldb) + k_iter;	/* Compute index of B element */
 	      dotprod += A[a_index] * B[b_index];	/* Compute product of A and B */
+
+	      a_index2 = ((k_iter + 1) * lda) + row;	/* Compute index of A element */
+	      b_index2 = (col * ldb) + k_iter + 1;	/* Compute index of B element */
+	      dotprod2 += A[a_index2] * B[b_index2];	/* Compute product of A and B */
+
+	      a_index3 = ((k_iter  + 2) * lda) + row;	/* Compute index of A element */
+	      b_index3 = (col * ldb) + k_iter + 2;	/* Compute index of B element */
+	      dotprod3 += A[a_index3] * B[b_index3];	/* Compute product of A and B */
+
+	      a_index4 = ((k_iter + 3) * lda) + row;	/* Compute index of A element */
+	      b_index4 = (col * ldb) + k_iter + 3;	/* Compute index of B element */
+	      dotprod4 += A[a_index4] * B[b_index4];	/* Compute product of A and B */
 	    }			/* k_iter */
 
+	  double finaldotprod = dotprod + dotprod2 + dotprod3 + dotprod4;//Combine all  the dotprods
 	  int c_index = (col * ldc) + row;
-	  C[c_index] = (alpha * dotprod) + (beta * C[c_index]);
+	  C[c_index] = (alpha * finaldotprod) + (beta * C[c_index]);
 	}			/* row */
     }				/* col */
 
