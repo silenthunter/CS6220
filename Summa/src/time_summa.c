@@ -17,6 +17,7 @@
 void
 random_summa (int m, int n, int k, int px, int py, int pb, int iterations)
 {
+  if(pb == 0) return;//Make sure we don't re-run pb=1 constantly
   int iter;
   double t_start, t_elapsed;
   int rank = 0;
@@ -78,6 +79,7 @@ main (int argc, char *argv[])
   int np = 0;
   char hostname[MPI_MAX_PROCESSOR_NAME + 1];
   int namelen = 0;
+  int scale = atoi(argv[1]);
 
   MPI_Init (&argc, &argv);	/* starts MPI */
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);	/* Get process id */
@@ -93,12 +95,12 @@ main (int argc, char *argv[])
 
   initDeviceProperties();
 
-  random_summa (256, 256, 256, 2, 2, 128, NUM_TRIALS);
-  random_summa (512, 512, 512, 2, 2, 256, NUM_TRIALS);
-  random_summa (1024, 1024, 1024, 2, 2, 512, NUM_TRIALS);
-  random_summa (2048, 2048, 2048, 2, 2, 1024, NUM_TRIALS);
-  random_summa (4096, 4096, 4096, 2, 2, 1024, NUM_TRIALS);
-  random_summa (8192, 8192, 8192, 2, 2, 512, NUM_TRIALS);
+  random_summa (256, 256, 256, 2, 2, 128 / scale, NUM_TRIALS);
+  random_summa (512, 512, 512, 2, 2, 256 / scale, NUM_TRIALS);
+  random_summa (1024, 1024, 1024, 2, 2, 512 / scale, NUM_TRIALS);
+  random_summa (2048, 2048, 2048, 2, 2, 1024 / scale, NUM_TRIALS);
+  random_summa (4096, 4096, 4096, 2, 2, 1024 / scale, NUM_TRIALS);
+  random_summa (8192, 8192, 8192, 2, 2, 512 / scale, NUM_TRIALS);
 
 
   MPI_Finalize ();
