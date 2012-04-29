@@ -16,6 +16,6 @@ echo -e "\n\n"
 echo -e "scale:1\n"
 
 # Run the ping-pong benchmark
-mpirun --hostfile $PBS_NODEFILE -np 4 ./time_summa 1
+mpirun --hostfile $PBS_NODEFILE -np 16 ./time_summa 1
 
 # eof
