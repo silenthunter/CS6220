@@ -1,0 +1,44 @@
+Adding user ggresham3 to group authjobs
+/nethome/rvuduc3/local/jinx/chapel/1.4.0--gasnet-ibv ~
+Setting CHPL_HOME to /nethome/rvuduc3/local/jinx/chapel/1.4.0--gasnet-ibv
+Setting CHPL_HOST_PLATFORM to linux64
+Updating PATH to include /nethome/rvuduc3/local/jinx/chapel/1.4.0--gasnet-ibv/bin/linux64
+                     and /nethome/rvuduc3/local/jinx/chapel/1.4.0--gasnet-ibv/util
+Updating MANPATH to include /nethome/rvuduc3/local/jinx/chapel/1.4.0--gasnet-ibv/man
+~
+/nethome/achandramo3/intel/cnc/0.6/bin/intel64 ~
+~
+Sat Apr 28 23:02:41 EDT 2012
+jinx1
+/nethome/ggresham3/CS6220/Summa/src
+jinx1
+jinx2
+jinx3
+jinx4
+
+
+
+scale:1
+
+Using Host:jinx1 -- Rank 12 out of 16
+Using Host:jinx1 -- Rank 0 out of 16
+Using Host:jinx1 -- Rank 8 out of 16
+Using Host:jinx2 -- Rank 9 out of 16
+Using Host:jinx2 -- Rank 5 out of 16
+Using Host:jinx2 -- Rank 13 out of 16
+Using Host:jinx3 -- Rank 2 out of 16
+Using Host:jinx3 -- Rank 6 out of 16
+Using Host:jinx3 -- Rank 10 out of 16
+Using Host:jinx3 -- Rank 14 out of 16
+Using Host:jinx4 -- Rank 15 out of 16
+Using Host:jinx1 -- Rank 4 out of 16
+Using Host:jinx4 -- Rank 3 out of 16
+Using Host:jinx4 -- Rank 7 out of 16
+Using Host:jinx4 -- Rank 11 out of 16
+Using Host:jinx2 -- Rank 1 out of 16
+random_matrix_test m=256 n=256 k=256 px=4 py=4 pb=64 iterations=25.....total_time=0.205588, per_iteration=0.008224
+random_matrix_test m=512 n=512 k=512 px=4 py=4 pb=128 iterations=25.....total_time=1.450941, per_iteration=0.058038
+random_matrix_test m=1024 n=1024 k=1024 px=4 py=4 pb=256 iterations=25.....total_time=5.157062, per_iteration=0.206282
+random_matrix_test m=2048 n=2048 k=2048 px=4 py=4 pb=512 iterations=25.....total_time=35.965946, per_iteration=1.438638
+random_matrix_test m=4096 n=4096 k=4096 px=4 py=4 pb=1024 iterations=25.....total_time=407.907661, per_iteration=16.316306
+Removing user ggresham3 from group authjobs
