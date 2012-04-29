@@ -83,7 +83,6 @@ extern "C" void local_mm (const int m, const int n, const int k, const double al
 	  const double *A, const int lda, const double *B, const int ldb,
 	  const double beta, double *C, const int ldc)
 {
-return;
 if(deviceCount == 0) initDeviceProperties();
 
 double *d_A[deviceCount];

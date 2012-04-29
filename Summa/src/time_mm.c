@@ -67,10 +67,11 @@ main (int argc, char *argv[])
   MPI_Comm_size (MPI_COMM_WORLD, &np);	/* Get number of processes */
   MPI_Get_processor_name (hostname, &namelen);	/* Get hostname of node */
   printf ("[Using Host:%s -- Rank %d out of %d]\n", hostname, rank, np);
+  initDeviceProperties();
 
   if (rank == 0)
     {
-      random_multiply (512, 512, 512, NUM_TRIALS);
+      random_multiply (4096, 4096, 4096, NUM_TRIALS);
     }
 
   MPI_Finalize ();

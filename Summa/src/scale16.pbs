@@ -1,6 +1,6 @@
 #PBS -q class
 #PBS -l nodes=4:m2090
-#PBS -l walltime=00:05:00
+#PBS -l walltime=00:45:00
 #PBS -N time_gpu
 
 export OMPI_MCA_mpi_yield_when_idle=0
