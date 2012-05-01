@@ -7,7 +7,8 @@
 \usepackage{mathptmx}
 \hyphenpenalty=5000
 \usepackage{graphicx}
-\usepackage[dvips,letterpaper,nohead,margin=.7in]{geometry} 
+\usepackage[dvips,letterpaper,nohead,margin=1in]{geometry} 
+\usepackage[font=small,labelfont=bf]{caption}
 \usepackage[numbers]{natbib}
 \usepackage{amsmath}
 \selectfont
@@ -15,7 +16,7 @@
 \setlength\parskip{0.1in}
 
 \author{Gavin Gresham}
-\title{Comparison of MPI, OpenMP and CUDA on the SUMMA algorithm on varying matrix dimensions and block sizes}
+\title{Comparison of MPI, OpenMP and CUDA on the SUMMA algorithm}
 
 \begin{document}
 \maketitle
@@ -48,8 +49,8 @@ Before the algorithm transmits or receives any new data, the temporary buffers a
 
 The $MPI\_Bcast$ method is now called for both $A$ on the $rowComm$ and $B$ on the $colComm$ (Fig \ref{fig:Comms}). The sending node is determined by the outer loop; All other nodes instead receive data to their temporary buffers. Once that is complete, the temporary data for $B$ has to be reordered once again to fit into column major order.
 
-\begin{figure}[h]
-\includegraphics[scale=.5]{Images/Comms.png}
+\begin{figure}[tbh]
+\includegraphics[scale=.45]{Images/Comms.png}
 \caption{The data each node broadcasts using $rowComm$ and $colComm$. Original image from \cite{COMMS_FIG}}
 \label{fig:Comms}
 \end{figure}
@@ -59,11 +60,11 @@ Finally, local matrix multiply is performed on the temporary buffers and the res
 This process continues until all the data from this pair of nodes is sent ($Block_K / PanelBlockSize$ iterations). The algorithm then moves to the next pair of nodes and repeats the process.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{OpenMP}
-\subsubsection{Naï¿½ve}
+\subsubsection{Naïve}
 The initial implementation of OpenMP is very straight forward. The outer loop of the local matrix multiple was parallelized allowing each column to be computed independantly of the others. The $row$ and $col$ variables were made constant so the threads would not interfere with each other.
 
 \subsubsection{Loop unrolling and blocking}
-This is where the more significant optimizations occur. It includes the same additions from the naï¿½ve implementation, but also other improvements to help with cache misses and pre-fetching.
+This is where the more significant optimizations occur. It includes the same additions from the naïve implementation, but also other improvements to help with cache misses and pre-fetching.
 
 First, I unrolled the loop so that it performs four steps each iteration. The idea is to reduce the loop overhead in the form of branch mispredictions. Additionally, creating new variables for these four steps should help alleviate any Write-After-Write (WAW) stalls that were occuring in the processor pipeline. The four counter variables are combined after each interloop and this final dot product is added to $C$.
 
@@ -71,7 +72,7 @@ First, I unrolled the loop so that it performs four steps each iteration. The id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{CUDA}
 \subsubsection{Host}
-The CUDA implementation expands upon the SUMMA algorithm by replace the normal local matrix multiply with one that computes the results on the GPU, rather than the CPU.
+The CUDA implementation expands upon the SUMMA algorithm by replacing the normal local matrix multiply with one that computes the results on the GPU, rather than the CPU.
 
 Before any benchmark is run, the system is first queried for information on the GPUs. Primarily, how many GPUs are available, and what is the size of their shared memory. This takes a a non-trivial amount of time so should not be done within the first benchmark test, as it will skew the results.
 
@@ -83,36 +84,37 @@ Using the information on shared memory the maximum number of rows that can fit i
 After the kernel is done executing, $C$ is copied from the device to host, and the matrix arrays on the device are freed.
 
 \subsubsection{Device}
-The shared memory is first divided into two arrays. One for $A$ and the other for $B$. Each thread then copies the matrix element it is responsible for from  global memory to the shared arrays for $A$ and $B$. These reads are made in a way that should allow for coalesced memory access as per \cite{CUDA_PGUIDE}, resulting in a minimal number of memory transactions. There is a $\_\_syncthread()$ call after this procedure to ensure the shared memory is in place before proceeding.
+The shared memory is first divided into two arrays. One for $A$ and the other for $B$. Each thread then copies the matrix element it is responsible for from  global memory to the shared arrays for $A$ and $B$. These reads are made in a way that allow for coalesced memory access as per \cite{CUDA_PGUIDE}, resulting in a minimal number of memory transactions. There is a $\_\_syncthread()$ call after this procedure to ensure the shared memory is in place before proceeding.
 
 The thread then determines its row and column by using the built in CUDA $threadIdx$ and $blockIdx$ structures to find its place within the grid. Knowing its row and column, the thread can perform the innermost loop of the standard local multiplication loading each required element from the shared array. The final dotproduct is written to the corresponding element in $C$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Evaluation}
-The quality of the implementations is judged primarily on GFLOPS/s and future scalability. GFLOPS/s is acquired by comparing each implementations runtime against the GFLOPS of computing a matrix (Eqn \ref{eqn:GFLOPS}). This number is also compared agains the theoretical maximum GFLOPS of the given device.
+The quality of the implementations is judged primarily on GFLOPS/s and future scalability. GFLOPS/s is acquired by comparing each implementations runtime against the GFLOPS of computing a matrix (Eqn \ref{eqn:GFLOPS}). This number is also compared against the theoretical maximum GFLOPS of the given device.
 
 \subsection{SUMMA}
 The SUMMA algorithm performed adequately, though the results were not as impressive as I had hoped. With each core of the X5650 having performance around 2.1 GFLOPS \cite{XEON_FLOPS}, the max GFLOPS I could be achieving is 33.6 GFLOPS using 16 cores. Unfortunately, my implemenation falls well short of this.
 
 The likely cause of performance loss is the overhead associated with MPI communication. MPI\_Bcast must block until data is received, making each thread only process as quickly as the slowest thread in the communicator. This also explains why increasing the panel block size increases performance. Fewer broadcasts results in less overhead and less time waiting. However, increasing the panel block size will increase the memory requirement of the threads, as the send and receive buffers will expand.
 
-\begin{figure}[h]
-\includegraphics[scale=.3]{Images/SummaPerf.png}
+\begin{figure}[tbh]
+\includegraphics[scale=.25]{Images/SummaPerf.png}
 \caption{The performance of the base SUMMA implementation based on matrix size and panel block size.}
 \label{fig:SummaPerf}
 \end{figure}
 
 \subsection{OpenMP}
-This implementation performed worse than I was expecting. Its performance closely matches that of the SUMMA implementation, often falling short.
+%This implementation performed worse than I was expecting. Its performance closely matches that of the SUMMA implementation, often falling short.
+This implementation performed worse than I was expecting. It only reaches about 50\% of the SUMMA implementation. I would speculate this is due to cache misses. When MPI enters this method, it proceeds sequentially. The column that was just used will stay in cache as the inner loop iterates through the rows. OpenMP threads will not necessarily be assigned in order. This will lead to more cache conflicts, and the cache-miss penalty may be high.
 
-This seems reasonable as the SUMMA implementation had a MPI process per core totalling 16 process on Jinx fourcore, while the OpenMP solution has one MPI process per Jinx node, and one OpenMP thread per core. Each implementation has 16 threads total, and have no real benefit over each other.
+The SUMMA implementation had a MPI process per core totalling 16 process on Jinx fourcore, while the OpenMP solution has one MPI process per Jinx node, and one OpenMP thread per core. Each implementation has 16 threads total, and have no real benefit over each other in terms of processing power.
 
 \subsection{CUDA}
-The performance of the CUDA+SUMMA implementation was signficant after seeing the results of the previous two implementations. While very little benefit is gained from low panel block sizes (Tbl \ref{tbl:CUDA_PERF}), the more data that can be provided to the GPU, better the performance was. It not only continued to scale as the panel block size increased, but the GFLOPS increased at a rate greater than any other implementation.
+The performance of the CUDA+SUMMA implementation was signficant after seeing the results of the previous two implementations. While very little benefit is gained from low panel block sizes (Tbl \ref{tbl:CUDA_PERF}), the more data that can be provided to the GPU, the better the performance was. It not only continued to scale as the panel block size increased, but the GFLOPS increased at a rate greater than any other implementation.
 
 \begin{figure}[htb]
-\includegraphics[scale=.3]{Images/CUDAPerf.png}
+\includegraphics[scale=.25]{Images/CUDAPerf.png}
 \caption{The performance of the CUDA+SUMMA implementation based on matrix size and panel block size$^1$.}
 \label{fig:CUDAPerf}
 \end{figure}
@@ -157,7 +159,7 @@ Matrix Dimensions & GFLOPS & Time per Iteration (s) & \% of theoretical max\\\no
 \section{Conclusion}
 \subsection{Best Performance}
 \begin{figure}[htb]
-\includegraphics[scale=.3]{Images/CUDASpeedup.png}
+\includegraphics[scale=.25]{Images/CUDASpeedup.png}
 \caption{The performance gain of CUDA+SUMMA over the base SUMMA implementation.}
 \label{fig:CUDA_SPEEDUP}
 \end{figure}
@@ -171,18 +173,18 @@ Given that each Jinx node contains two NVIDIA m2090's \cite{JINX_INFO}, and I us
 \subsection{Most Scalable}
 I believe that once again the combination of SUMMA and CUDA comes out ahead of the other implementations. While the other algorithms failed to complete larger matrices in the allotted time, the GPUs were able to compute the 8192 dimension matrix in under 60 seconds even in the worst case.
 
-The bottleneck did not come in the way of processing power, but memory. Assuming a double precision float takes 8 bytes, $A$, $B$, and $C$ will take 1.6 Gigabytes of memory \ref{eqn:MatrixSizes}. Despite GPU nodes on Jinx having 24GB of memory \cite{JINX_INFO}, my executables could not allocated over 2GB. I'm unsure why this is as the executable is 64-bit and no stack trace is returned.
-
-The number of GPUs that a node can use is not bound so this will scale as more GPUs are added to a system. Additionally, the shared memory of each CUDA block is queried on startup, ideally allowing for an optimal allocation of blocks for any GPU. As long as no hard limits are hit in terms of memory, I don't see a reason this implementation could not scale to much larger matrices.
+The bottleneck did not come in the way of processing power, but memory. Assuming a double precision float takes 8 bytes, $A$, $B$, and $C$ will take 1.6 Gigabytes of memory (Eqn \ref{eqn:MatrixSizes}). Despite GPU nodes on Jinx having 24GB of memory \cite{JINX_INFO}, my executables could not allocated over 2GB. I'm unsure why this is as the executable is 64-bit and no stack trace is returned.
 
 \begin{equation}\label{eqn:MatrixSizes}
-8\; bytes * 8192^2 * 3= 1,610,612,736 bytes
+8\; bytes * 8192^2 * 3= 1,610,612,736\; bytes
 \end{equation}
+
+The number of GPUs that a node can use is not bound, so this will scale as more GPUs are added to a system. Additionally, the shared memory of each CUDA block is queried on startup, ideally allowing for an optimal allocation of blocks for any GPU. As long as no hard limits are hit in terms of memory, I don't see a reason this implementation could not scale to much larger matrices.
 
 \subsection{Line Estimates}
 The lines of the SUMMA implementation are about 140 lines. The MPI changes are an additional 30. The CUDA implementation is about 140 lines of code in addition to the SUMMA changes.
 \subsection{Most Complex Problem of the Implementation}
-I believe the most complex part of the implementation was the actual SUMMA algorithm. It was difficult for me to visualize the interactions between separate nodes coordinating their broadcasts and keeping the data in order. 
+I believe the most complex part of the implementation was the actual SUMMA algorithm. It was difficult for me to visualize the interactions between separate nodes, coordinating their broadcasts and keeping the data in order. 
 
 A close second was the actual CUDA kernel. The idea of SIMD was hard to grasp at first, trying to understand thousands of threads working in parallel. This in addition to the optimizations that are required to make CUDA worthwhile was complex.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
